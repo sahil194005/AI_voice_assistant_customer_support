@@ -1,0 +1,19 @@
+{
+  "workbench.colorTheme": "JetBrains Darcula Theme",
+  "editor.fontFamily": "'JetBrains Mono', 'Cascadia Code', Consolas, 'Courier New', monospace",
+  "editor.fontLigatures": true,
+  "editor.fontWeight": "400",
+  "editor.lineHeight": 22,
+  "editor.letterSpacing": 0.2,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUnusedVariable": "warning",
+    "reportUnusedFunction": "warning"
+  },
+  "editor.showUnused": true,
+  "workbench.colorCustomizations": {
+    "editorUnnecessaryCode.opacity": "#00000080",
+    "editorUnnecessaryCode.border": "#ff6b6b"
+  },
+  "editor.multiCursorModifier": "alt",
+  "editor.definitionLinkOpensInPeek": false
+}

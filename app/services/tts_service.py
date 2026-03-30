@@ -23,7 +23,7 @@ async def stream_tts_ulaw_8k(text: str) -> AsyncIterator[bytes]:
     if not voice_id:
         raise RuntimeError("ELEVENLABS_VOICE_ID is missing. Add it to your .env file.")
 
-    stream = _get_eleven_client().text_to_speech.stream(
+    stream = await _get_eleven_client().text_to_speech.stream(
         voice_id=voice_id,
         text=text,
         model_id=ELEVENLABS_MODEL_ID,

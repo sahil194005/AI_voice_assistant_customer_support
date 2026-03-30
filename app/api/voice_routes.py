@@ -14,11 +14,17 @@ router = APIRouter()
 
 @router.post("/voice")
 async def reply(request: Request):
+    form_data = await request.form()
     host = request.url.hostname
+    caller_phone = str(form_data.get("From", "") or "")
+    call_sid = str(form_data.get("CallSid", "") or "")
     response = f"""
     <Response>
         <Connect>
-            <Stream url="wss://{host}/media-stream" />
+            <Stream url="wss://{host}/media-stream">
+                <Parameter name="caller_phone" value="{caller_phone}" />
+                <Parameter name="call_sid" value="{call_sid}" />
+            </Stream>
         </Connect>
     </Response>
     """

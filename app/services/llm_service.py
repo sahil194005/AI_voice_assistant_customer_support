@@ -42,7 +42,7 @@ async def stream_gwen_response(user_input: str) -> AsyncIterator[str]:
     )
 
     async for chunk in stream:
-        content = chunk.get("message", {}).get("content", "")
+        content = chunk.message.content if hasattr(chunk, "message") else chunk.get("message", {}).get("content", "")
         if content:
             yield content
 
@@ -56,7 +56,7 @@ async def extract_intent(user_input: str):
             messages=[{"role": "user", "content": prompt}],
             format="json",
         )
-        raw_content = response["message"]["content"]
+        raw_content = response.message.content if hasattr(response, "message") else response["message"]["content"]
         print("LLM raw response:", raw_content)
         return json.loads(raw_content)
     except Exception as error:
