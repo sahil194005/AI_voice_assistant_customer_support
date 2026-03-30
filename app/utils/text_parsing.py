@@ -4,7 +4,6 @@ from dateutil import parser
 
 def parse_date(text: str):
     text = text.lower()
-
     today = datetime.today()
 
     if "today" in text:
@@ -19,7 +18,7 @@ def parse_date(text: str):
     try:
         dt = parser.parse(text, fuzzy=True)
         return dt.strftime("%Y-%m-%d")
-    except:
+    except Exception:
         return None
 
 
