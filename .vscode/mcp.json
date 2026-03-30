@@ -1,12 +1,9 @@
 {
-    "servers": {
-        "deepgram-docs": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-http",
-                "https://deepgram.mcp.kapa.ai"
-            ]
-        }
-    }
+	"servers": {
+		"deepgram": {
+			"url": "https://deepgram.mcp.kapa.ai",
+			"type": "http"
+		}
+	},
+	"inputs": []
 }
