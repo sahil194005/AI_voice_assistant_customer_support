@@ -6,7 +6,7 @@ _sessions: Dict[str, SessionData] = {}
 
 def get_session(phone: str) -> SessionData:
     if phone not in _sessions:
-        _sessions[phone] = {"intent": None, "department": None, "date": None}
+        _sessions[phone] = {"intent": None, "department": None, "date": None, "time": None}
     return _sessions[phone]
 
 

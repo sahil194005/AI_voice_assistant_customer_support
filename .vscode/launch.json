@@ -13,9 +13,12 @@
             "args": [
                 "main:app",
                 "--port",
-                "8000"
+                "8000",
+                "--reload"
             ],
-            "jinja": true
+            "jinja": true,
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env"
         },
         {
             "name": "Python Debugger: Current File",

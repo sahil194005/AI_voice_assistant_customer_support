@@ -3,11 +3,10 @@ from urllib.parse import parse_qs
 from fastapi import APIRouter, Request, Response, WebSocket
 from fastapi.responses import HTMLResponse
 
-from app.services.appointment_service import ALLOWED_DEPARTMENTS, create_appointment
+from app.services.appointment_service import create_appointment, get_available_departments
 from app.services.llm_service import extract_intent
 from app.services.session_store import get_session, reset_session
 from app.services.stt_service import handle_media_stream
-from app.utils.text_parsing import normalize_department, parse_date
 
 router = APIRouter()
 
@@ -48,27 +47,30 @@ async def process_speech(request: Request):
     print("Caller ID:", caller)
 
     session = get_session(caller)
-    intent_data = await extract_intent(user_speech)
+    available_departments = get_available_departments()
+    intent_data = await extract_intent(user_speech, available_departments)
 
     print("Extracted:", intent_data)
 
-    if not session["intent"] and intent_data.get("intent"):
+    if not session["intent"] and intent_data.get("intent") and intent_data.get("intent") != "unknown":
         session["intent"] = intent_data.get("intent")
 
     if not session["department"] and intent_data.get("department"):
-        dept = intent_data.get("department") or normalize_department(user_speech)
-        if dept:
-            session["department"] = dept
+        session["department"] = intent_data.get("department")
 
-    if not session["date"] and intent_data.get("date"):
-        raw_date = intent_data.get("date")
-        parsed_date = parse_date(raw_date)
-        if parsed_date:
-            session["date"] = parsed_date
+    if not session["date"]:
+        llm_date = intent_data.get("date")
+        if llm_date:
+            session["date"] = llm_date
+
+    if not session["time"]:
+        llm_time = intent_data.get("time")
+        if llm_time:
+            session["time"] = llm_time
 
     print("Session:", session)
 
-    if session["intent"] != "book_appointment":
+    if session["intent"] and session["intent"] != "book_appointment":
         return Response(
             content="""
             <Response>
@@ -79,10 +81,21 @@ async def process_speech(request: Request):
         )
 
     if not session["department"]:
+        if not available_departments:
+            return Response(
+                content="""
+                <Response>
+                    <Say>Sorry, the clinic does not have appointment facilities configured yet.</Say>
+                </Response>
+                """,
+                media_type="application/xml",
+            )
+
+        department_options = ", ".join(available_departments)
         return Response(
-            content="""
+            content=f"""
             <Response>
-                <Say>Which department would you like to book?</Say>
+                <Say>Which department would you like to book? Available departments are {department_options}.</Say>
                 <Gather input="speech" action="/process-speech" method="POST"/>
             </Response>
             """,
@@ -100,18 +113,38 @@ async def process_speech(request: Request):
             media_type="application/xml",
         )
 
-    if session["department"] not in ALLOWED_DEPARTMENTS:
-        session["department"] = None
+    if not session["time"]:
         return Response(
             content="""
             <Response>
-                <Say>Sorry, that department is not available.</Say>
+                <Say>What time would you prefer for the appointment?</Say>
+                <Gather input="speech" action="/process-speech" method="POST"/>
             </Response>
             """,
             media_type="application/xml",
         )
 
-    confirmation = create_appointment(caller, session["department"], session["date"])
+    if session["department"] not in available_departments:
+        session["department"] = None
+        if not available_departments:
+            message = "Sorry, the clinic does not have appointment facilities configured yet."
+        else:
+            message = "Sorry, the clinic does not have the facility for that department yet."
+        return Response(
+            content=f"""
+            <Response>
+                <Say>{message}</Say>
+            </Response>
+            """,
+            media_type="application/xml",
+        )
+
+    confirmation = create_appointment(
+        caller,
+        session["department"],
+        session["date"],
+        session["time"],
+    )
     reset_session(caller)
 
     return Response(
