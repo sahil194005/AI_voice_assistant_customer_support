@@ -5,10 +5,19 @@ _sessions: Dict[str, SessionData] = {}
 
 
 def get_session(phone: str) -> SessionData:
-    if phone not in _sessions:
-        _sessions[phone] = {"intent": None, "department": None, "date": None, "time": None}
-    return _sessions[phone]
+    try:
+        if phone not in _sessions:
+            _sessions[phone] = {"intent": None, "department": None, "date": None, "time": None}
+        return _sessions[phone]
+    except Exception as error:
+        print(f"get_session failed: {error}")
+        raise
 
 
 def reset_session(phone: str) -> None:
-    _sessions.pop(phone, None)
+    try:
+        if phone in _sessions:
+            del _sessions[phone]
+    except Exception as error:
+        print(f"reset_session failed: {error}")
+        raise

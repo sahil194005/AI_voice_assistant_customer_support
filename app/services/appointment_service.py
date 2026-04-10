@@ -4,28 +4,14 @@ from sqlalchemy import text
 
 from app.db.session import SessionLocal
 
+
+
 def get_available_departments() -> list[str]:
-    db = None
     try:
-        db = SessionLocal()
-
-        rows = db.execute(
-            text(
-                """
-                SELECT name
-                FROM customer_support_db.departments
-                WHERE is_active = 1 AND name IS NOT NULL AND name <> ''
-                ORDER BY name
-                """
-            )
-        ).fetchall()
-
-        return [str(row[0]).strip().lower() for row in rows if row and str(row[0]).strip()]
-    except Exception:
-        return []
-    finally:
-        if db is not None:
-            db.close()
+        return ["Cardiology", "Dermatology", "Neurology", "Pediatrics", "Orthopedics"]
+    except Exception as error:
+        print(f"get_available_departments failed: {error}")
+        raise
 
 
 def create_appointment(
@@ -34,8 +20,8 @@ def create_appointment(
     date: str,
     time_slot: str,
 ) -> str:
-    db = None
     try:
+        db = None
         db = SessionLocal()
 
         query = text("SELECT * FROM customer_support_db.patients WHERE phone = :phone_val")
@@ -76,13 +62,11 @@ def create_appointment(
             },
         )
         db.commit()
-        try:
-            human_time = datetime.strptime(time_slot, "%H:%M:%S").strftime("%I:%M %p").lstrip("0")
-        except Exception:
-            human_time = time_slot
+        human_time = datetime.strptime(time_slot, "%H:%M:%S").strftime("%I:%M %p").lstrip("0")
         return f"Your appointment is booked for {date} at {human_time}"
     except Exception as error:
-        return f"An error occurred: {error}"
+        print(f"create_appointment failed: {error}")
+        raise
     finally:
         if db is not None:
             db.close()
