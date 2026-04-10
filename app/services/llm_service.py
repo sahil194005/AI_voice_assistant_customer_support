@@ -3,9 +3,7 @@ import re
 from datetime import datetime
 from typing import AsyncIterator
 
-from ollama import AsyncClient
-
-from app.core.config import OLLAMA_MODEL, OLLAMA_SYSTEM_PROMPT, OLLAMA_URL
+from app.services.llm import get_llm_provider
 
 PROMPT_TEMPLATE = """
 Extract structured information from the user input.
@@ -30,36 +28,23 @@ Rules:
 User input: "{input}"
 """
 
-_OLLAMA_CLIENT: AsyncClient | None = None
 ALLOWED_INTENTS = {"book_appointment", "check_availability", "unknown"}
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$")
 
 
-def _get_ollama_client() -> AsyncClient:
+def _get_llm_provider():
     try:
-        global _OLLAMA_CLIENT
-        if _OLLAMA_CLIENT is None:
-            _OLLAMA_CLIENT = AsyncClient(host=OLLAMA_URL) if OLLAMA_URL else AsyncClient()
-        return _OLLAMA_CLIENT
+        return get_llm_provider()
     except Exception as error:
-        print(f"_get_ollama_client failed: {error}")
+        print(f"_get_llm_provider failed: {error}")
         raise
 
 
 async def stream_gwen_response(user_input: str) -> AsyncIterator[str]:
     try:
-        stream = await _get_ollama_client().chat(
-            model=OLLAMA_MODEL,
-            messages=[
-                {"role": "system", "content": OLLAMA_SYSTEM_PROMPT},
-                {"role": "user", "content": user_input},
-            ],
-            stream=True,
-        )
-
-        async for chunk in stream:
-            content = chunk.message.content
+        provider = _get_llm_provider()
+        async for content in provider.stream_response(user_input):
             if content:
                 yield content
     except Exception as error:
@@ -77,15 +62,12 @@ async def extract_intent(user_input: str, available_departments: list[str] | Non
         )
         normalized_departments = _normalize_departments(available_departments)
         try:
-            response = await _get_ollama_client().chat(
-                model=OLLAMA_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                format="json",
-            )
+            provider = _get_llm_provider()
+            raw_content = await provider.extract_json(prompt)
         except Exception as error:
             print(f"LLM response parsing failed: {error}")
             raise ValueError("Failed to parse LLM response as JSON") from error
-        raw_content = response.message.content
+
         print("LLM raw response:", raw_content)
 
         parsed = json.loads(raw_content)
